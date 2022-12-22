@@ -1,11 +1,30 @@
 package com.globalit.account;
 
+import com.globalit.domain.Account;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import javax.validation.Valid;
 
 @Controller
+@RequiredArgsConstructor
 public class AccountController {
+
+  private final SignUpFormValidator signUpFormValidator;
+  private final AccountRepository accountRepository;
+
+  @InitBinder("signUpForm")
+  public void initBinder(WebDataBinder webDataBinder){
+    // webDataBinder 에
+    webDataBinder.addValidators(signUpFormValidator);
+  }
+
 
   @GetMapping("/sign-up")
   public String signUpForm(Model model){
@@ -30,5 +49,31 @@ public class AccountController {
     // nickname, email, password 에 저장됨
   }
 
+  // 회원가입 페이지에서 submit 버튼 눌렀을 때 동작하는 메소드
+  @PostMapping("/sign-up")
+  //public String signUpSubmit(@Valid @ModelAttribute SignUpForm signUpForm){
+  public String signUpSubmit(@Valid SignUpForm signUpForm, Errors errors){
+
+    signUpFormValidator.validate(signUpForm, errors);
+    if(errors.hasErrors()){
+      // 에러가 있으면 다음 페이지로 넘어가지 않고
+      // sign-up 페이지를 다시 보여줌
+      return "account/sign-up";
+    }
+
+    // 회원가입 폼 submit 처리
+    Account account = Account.builder()
+                             .email(signUpForm.getEmail())
+                             .nickname(signUpForm.getNickname())
+                             .password(signUpForm.getPassword())
+                             .studyCreateByWeb(true)
+                             .studyEnrollmentResultByWeb(true)
+                             .studyUpdatedByWeb(true)
+                             .build();
+
+    Account newAccount = accountRepository.save(account);
+    // 회원가입 처리 페이지로 이동
+    return "redirect:/";
+  }
 
 }
